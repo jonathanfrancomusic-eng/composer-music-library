@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Explore My Music</title>
+<style>
+  :root {
+    --ink: #25272c;
+    --muted: #70747d;
+    --accent: #b87548;
+    --line: #e4e3df;
+    --paper: #ffffff;
+    --soft: #f5f3f0;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 24px;
+    color: var(--ink);
+    background: var(--paper);
+    font-family: Arial, sans-serif;
+    line-height: 1.5;
+  }
+
+  .library {
+    max-width: 920px;
+    margin: auto;
+  }
+
+  h1 {
+    font-family: Georgia, serif;
+    font-weight: normal;
+    font-size: clamp(30px, 5vw, 42px);
+    margin: 0 0 8px;
+  }
+
+  .intro {
+    color: var(--muted);
+    margin: 0 0 26px;
+  }
+
+  h2 {
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin: 22px 0 12px;
+  }
+
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .tag {
+    border: 1px solid #d7d5d0;
+    background: white;
+    border-radius: 24px;
+    padding: 9px 14px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .tag:hover { border-color: var(--accent); }
+
+  .tag.active {
+    color: white;
+    background: var(--ink);
+    border-color: var(--ink);
+  }
+
+  .filter-tools {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 16px 0;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .text-button {
+    border: 0;
+    padding: 6px 0;
+    color: var(--ink);
+    background: transparent;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  .track {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-top: 1px solid var(--line);
+    padding: 17px 0;
+  }
+
+  .track-info { flex: 1; min-width: 0; }
+
+  .track-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 3px;
+  }
+
+  .description {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 7px;
+  }
+
+  .track-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .mini-tag {
+    font-size: 11px;
+    color: #555962;
+    background: var(--soft);
+    border-radius: 4px;
+    padding: 3px 7px;
+  }
+
+  .listen {
+    flex-shrink: 0;
+    background: var(--ink);
+    color: white;
+    border: 1px solid var(--ink);
+    border-radius: 4px;
+    padding: 10px 14px;
+    cursor: pointer;
+  }
+
+  .listen:hover { background: #45474d; }
+
+  .track.selected {
+    background: #faf8f5;
+  }
+
+  .empty {
+    padding: 28px 0;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .player-section {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    margin-top: 26px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: white;
+    box-shadow: 0 -4px 20px #0000000a;
+  }
+
+  .now-playing {
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+
+  .now-playing span { color: var(--muted); }
+
+  .player-frame {
+    display: block;
+    width: 100%;
+    height: 166px;
+    border: 0;
+    border-radius: 4px;
+  }
+
+  .player-placeholder {
+    padding: 20px;
+    background: var(--soft);
+    color: var(--muted);
+    font-size: 13px;
+    text-align: center;
+  }
+
+  .credit {
+    margin-top: 14px;
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  @media (max-width: 520px) {
+    body { padding: 16px; }
+    .track { gap: 10px; }
+    .listen { padding: 9px 10px; }
+    .player-section { padding: 12px; }
+  }
+</style>
+</head>
+<body>
+<main class="library">
+  <h1>Explore My Music</h1>
+  <p class="intro">
+    Original music for film, television and advertising.
+    Filter by style, mood or musical character.
+  </p>
+
+  <h2>Filter by style and mood</h2>
+  <div id="filters" class="filters"></div>
+
+  <div class="filter-tools">
+    <span id="count" aria-live="polite"></span>
+    <button class="text-button" id="clear">Clear filters</button>
+  </div>
+
+  <div id="tracks"></div>
+
+  <section class="player-section" id="player-section">
+    <div class="now-playing" id="now-playing">
+      <strong>Now playing</strong>
+      <span> — Select a track below</span>
+    </div>
+    <div id="player-container">
+      <div class="player-placeholder">
+        Select a track to load the SoundCloud player here.
+      </div>
+    </div>
+    <div class="credit">
+      Audio hosted by SoundCloud.
+    </div>
+  </section>
+</main>
+
+<script>
+/*
+  YOUR TRACK CATALOG
+
+  After uploading a track to SoundCloud:
+  1. Copy its public URL.
+  2. Replace the empty url below.
+  3. Edit the title, description and tags.
+  4. Add or duplicate entries as needed.
+
+  Use exact tag names from the filter list.
+*/
+
+const tracks = [
+  {
+    title: "Example 01 — Weightless",
+    description: "Atmospheric textures and evolving drones.",
+    tags: ["Ambient", "Cinematic", "Minimal"],
+    url: ""
+  },
+  {
+    title: "Example 02 — Pulse",
+    description: "Driving patterns and layered percussion.",
+    tags: ["Rhythmic", "Electronic", "Energetic"],
+    url: ""
+  },
+  {
+    title: "Example 03 — Elegy",
+    description: "Expressive piano and orchestral strings.",
+    tags: ["Classical", "Emotional", "Piano"],
+    url: ""
+  },
+  {
+    title: "Example 04 — Glass Horizons",
+    description: "Spacious piano and delicate sound design.",
+    tags: ["Ambient", "Classical", "Piano", "Minimal"],
+    url: ""
+  },
+  {
+    title: "Example 05 — The Turning Point",
+    description: "Building tension and a cinematic climax.",
+    tags: ["Cinematic", "Tension", "Orchestral"],
+    url: ""
+  },
+  {
+    title: "Example 06 — Forward Motion",
+    description: "Optimistic energy for visual storytelling.",
+    tags: ["Rhythmic", "Energetic", "Commercial"],
+    url: ""
+  }
+];
+
+const allTags = [
+  "Ambient",
+  "Rhythmic",
+  "Classical",
+  "Electronic",
+  "Cinematic",
+  "Emotional",
+  "Minimal",
+  "Energetic",
+  "Piano",
+  "Orchestral",
+  "Tension",
+  "Commercial"
+];
+
+const selectedTags = new Set();
+let currentTrack = null;
+
+const filtersEl = document.getElementById("filters");
+const tracksEl = document.getElementById("tracks");
+const countEl = document.getElementById("count");
+const playerContainer = document.getElementById("player-container");
+const nowPlaying = document.getElementById("now-playing");
+
+function renderFilters() {
+  filtersEl.innerHTML = "";
+
+  allTags.forEach(tag => {
+    const button = document.createElement("button");
+    button.className = "tag" +
+      (selectedTags.has(tag) ? " active" : "");
+    button.textContent = tag;
+    button.setAttribute("aria-pressed", selectedTags.has(tag));
+
+    button.addEventListener("click", () => {
+      if (selectedTags.has(tag)) {
+        selectedTags.delete(tag);
+      } else {
+        selectedTags.add(tag);
+      }
+      renderFilters();
+      renderTracks();
+    });
+
+    filtersEl.appendChild(button);
+  });
+}
+
+function renderTracks() {
+  tracksEl.innerHTML = "";
+
+  // AND logic: a track must match EVERY selected tag.
+  const results = tracks.filter(track =>
+    [...selectedTags].every(tag => track.tags.includes(tag))
+  );
+
+  countEl.textContent =
+    `${results.length} ${results.length === 1 ? "track" : "tracks"}`;
+
+  if (results.length === 0) {
+    tracksEl.innerHTML =
+      '<div class="empty">No tracks match all selected tags. ' +
+      'Try removing a filter.</div>';
+    return;
+  }
+
+  results.forEach(track => {
+    const row = document.createElement("article");
+    row.className = "track" +
+      (currentTrack === track ? " selected" : "");
+
+    const info = document.createElement("div");
+    info.className = "track-info";
+
+    const title = document.createElement("div");
+    title.className = "track-title";
+    title.textContent = track.title;
+
+    const description = document.createElement("div");
+    description.className = "description";
+    description.textContent = track.description;
+
+    const tags = document.createElement("div");
+    tags.className = "track-tags";
+
+    track.tags.forEach(tag => {
+      const chip = document.createElement("span");
+      chip.className = "mini-tag";
+      chip.textContent = tag;
+      tags.appendChild(chip);
+    });
+
+    info.append(title, description, tags);
+
+    const button = document.createElement("button");
+    button.className = "listen";
+    button.textContent = currentTrack === track
+      ? "Selected" : "Listen";
+    button.setAttribute("aria-label", "Listen to " + track.title);
+
+    button.addEventListener("click", () => selectTrack(track));
+
+    row.append(info, button);
+    tracksEl.appendChild(row);
+  });
+}
+
+function selectTrack(track) {
+  currentTrack = track;
+  nowPlaying.innerHTML = "";
+
+  const label = document.createElement("strong");
+  label.textContent = "Now playing: ";
+
+  const title = document.createElement("span");
+  title.textContent = track.title;
+
+  nowPlaying.append(label, title);
+
+  if (!track.url.trim()) {
+    playerContainer.innerHTML =
+      '<div class="player-placeholder">' +
+      'This is a demo entry. Add your public SoundCloud track URL ' +
+      'to this track in the code to enable playback.' +
+      '</div>';
+  } else {
+    const iframe = document.createElement("iframe");
+    const playerUrl =
+      "https://w.soundcloud.com/player/?url=" +
+      encodeURIComponent(track.url.trim()) +
+      "&auto_play=false&hide_related=true&show_comments=false" +
+      "&show_user=true&show_reposts=false&visual=false";
+
+    iframe.className = "player-frame";
+    iframe.title = "SoundCloud player: " + track.title;
+    iframe.allow = "autoplay";
+    iframe.loading = "lazy";
+    iframe.src = playerUrl;
+
+    playerContainer.replaceChildren(iframe);
+  }
+
+  renderTracks();
+}
+
+document.getElementById("clear").addEventListener("click", () => {
+  selectedTags.clear();
+  renderFilters();
+  renderTracks();
+});
+
+renderFilters();
+renderTracks();
+</script>
+</body>
+</html>
