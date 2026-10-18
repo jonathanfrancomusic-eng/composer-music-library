@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#ffffff">
 <title>Explore My Music</title>
+
 <style>
   :root {
     --ink: #25272c;
@@ -14,126 +16,383 @@
     --paper: #ffffff;
     --soft: #f5f3f0;
   }
+
   * { box-sizing: border-box; }
+
   body {
-    margin: 0; padding: 24px; color: var(--ink);
-    background: var(--paper); font-family: Arial, sans-serif; line-height: 1.5;
+    margin: 0;
+    padding: 24px;
+    color: var(--ink);
+    background: var(--paper);
+    font-family: Arial, sans-serif;
+    line-height: 1.5;
   }
+
   button { font: inherit; }
-  button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
-  .library { max-width: 920px; margin: auto; }
-  h1 {
-    font-family: Georgia, serif; font-weight: normal;
-    font-size: clamp(30px, 5vw, 42px); margin: 0 0 8px;
+
+  button:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 3px;
   }
+
+  .library { max-width: 920px; margin: auto; }
+
+  h1 {
+    font-family: Georgia, serif;
+    font-weight: normal;
+    font-size: clamp(30px, 5vw, 42px);
+    margin: 0 0 8px;
+  }
+
   .intro { color: var(--muted); margin: 0 0 26px; }
+
   h2 {
-    font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
     margin: 22px 0 12px;
   }
-  .filters { display: flex; flex-wrap: wrap; gap: 8px; }
-  .tag {
-    border: 1px solid #d7d5d0; background: white; border-radius: 24px;
-    padding: 9px 14px; font-size: 13px; cursor: pointer;
-  }
-  .tag:hover { border-color: var(--accent); }
-  .tag.active { color: white; background: var(--ink); border-color: var(--ink); }
-  .filter-tools {
-    display: flex; align-items: center; justify-content: space-between;
-    flex-wrap: wrap; gap: 12px; margin: 16px 0; font-size: 13px; color: var(--muted);
-  }
-  .text-button {
-    border: 0; padding: 6px 0; color: var(--ink); background: transparent;
-    text-decoration: underline; text-underline-offset: 2px; cursor: pointer;
-  }
-  .track-list {
-    height: 420px; max-height: 60vh; overflow-y: auto; overscroll-behavior: contain;
-    border: 1px solid var(--line); border-radius: 7px; scrollbar-gutter: stable;
-  }
-  .track {
-    display: flex; align-items: center; gap: 16px;
-    border-top: 1px solid var(--line); padding: 17px 10px; scroll-margin: 8px;
-  }
-  .track:first-child { border-top: 0; }
-  .track-info { flex: 1; min-width: 0; }
-  .track-title { font-size: 16px; font-weight: 600; margin-bottom: 3px; overflow-wrap: anywhere; }
-  .description { font-size: 13px; color: var(--muted); margin-bottom: 7px; white-space: pre-line; }
-  .track-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-  .mini-tag { font-size: 11px; color: #555962; background: var(--soft); border-radius: 4px; padding: 3px 7px; }
-  .listen {
-    flex-shrink: 0; background: var(--ink); color: white; border: 1px solid var(--ink);
-    border-radius: 4px; padding: 10px 14px; cursor: pointer;
-  }
-  .listen:hover { background: #45474d; }
-  .track.selected { background: #faf8f5; box-shadow: inset 3px 0 var(--accent); }
-  .empty, .status { padding: 20px; color: var(--muted); font-size: 14px; }
-  .status.error { color: #a3332b; }
+
+  /* Player */
   .player-section {
-    margin: 0 0 24px; padding: 16px; border: 1px solid var(--line); border-radius: 8px;
-    background: white; box-shadow: 0 4px 20px #00000008;
+    margin: 0 0 28px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: white;
+    box-shadow: 0 4px 20px #00000008;
   }
-  .now-playing { font-size: 13px; margin: 0 0 12px; overflow-wrap: anywhere; }
+
+  .now-playing {
+    font-size: 13px;
+    margin: 0 0 12px;
+    overflow-wrap: anywhere;
+  }
+
   .now-playing span { color: var(--muted); }
-  .playback-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
-  .control-button { border: 1px solid var(--line); border-radius: 5px; background: white; padding: 8px 13px; cursor: pointer; }
-  .control-button:hover:not(:disabled) { border-color: var(--accent); }
-  .control-button:disabled { opacity: .45; cursor: not-allowed; }
-  .queue-note { color: var(--muted); font-size: 11px; margin-left: auto; }
-  .player-frame { display: block; width: 100%; height: 166px; border: 0; border-radius: 4px; }
-  .player-placeholder { padding: 20px; background: var(--soft); color: var(--muted); font-size: 13px; text-align: center; }
-  .credit { margin-top: 14px; color: var(--muted); font-size: 11px; }
+
+  .playback-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .control-button {
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    background: white;
+    padding: 8px 13px;
+    cursor: pointer;
+  }
+
+  .control-button:hover:not(:disabled) {
+    border-color: var(--accent);
+  }
+
+  .control-button:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+  }
+
+  .queue-note {
+    color: var(--muted);
+    font-size: 11px;
+    margin-left: auto;
+  }
+
+  .player-frame {
+    display: block;
+    width: 100%;
+    height: 166px;
+    border: 0;
+    border-radius: 4px;
+  }
+
+  .player-placeholder {
+    padding: 20px;
+    background: var(--soft);
+    color: var(--muted);
+    font-size: 13px;
+    text-align: center;
+  }
+
+  .credit {
+    margin-top: 14px;
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  /* Filters */
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .tag {
+    border: 1px solid #d7d5d0;
+    background: white;
+    border-radius: 24px;
+    padding: 9px 14px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .tag:hover { border-color: var(--accent); }
+
+  .tag.active {
+    color: white;
+    background: var(--ink);
+    border-color: var(--ink);
+  }
+
+  .filter-tools {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 16px 0;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .text-button {
+    border: 0;
+    padding: 6px 0;
+    color: var(--ink);
+    background: transparent;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+  }
+
+  /* Track list */
+  .track-list {
+    height: 420px;
+    max-height: 60vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    scrollbar-gutter: stable;
+  }
+
+  .track {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    border-top: 1px solid var(--line);
+    padding: 15px 12px;
+    scroll-margin: 8px;
+  }
+
+  .track:first-child { border-top: 0; }
+
+  .track.selected {
+    background: #faf8f5;
+    box-shadow: inset 3px 0 var(--accent);
+  }
+
+  /* Play-arrow button on the left */
+  .track-play {
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    color: var(--ink);
+    background: white;
+    cursor: pointer;
+  }
+
+  .track-play:hover {
+    color: white;
+    background: var(--ink);
+    border-color: var(--ink);
+  }
+
+  .track-play svg {
+    display: block;
+    width: 17px;
+    height: 17px;
+    fill: currentColor;
+  }
+
+  .track-info { flex: 1; min-width: 0; }
+
+  .track-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 3px;
+    overflow-wrap: anywhere;
+  }
+
+  .description {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 7px;
+    white-space: pre-line;
+  }
+
+  .track-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .mini-tag {
+    font-size: 11px;
+    color: #555962;
+    background: var(--soft);
+    border-radius: 4px;
+    padding: 3px 7px;
+  }
+
+  /* Right-side speaker: visible only while the selected track plays */
+  .track-indicator {
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+  }
+
+  .track-indicator svg {
+    width: 21px;
+    height: 21px;
+    display: block;
+    fill: currentColor;
+  }
+
+  .empty, .status {
+    padding: 20px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .status.error { color: #a3332b; }
+
   @media (max-width: 520px) {
     body { padding: 16px; }
-    .track-list { height: 320px; max-height: 45vh; }
-    .track { gap: 10px; padding: 14px 9px; align-items: flex-start; }
-    .listen { padding: 9px 10px; }
+
+    .track-list {
+      height: 320px;
+      max-height: 45vh;
+    }
+
+    .track {
+      gap: 9px;
+      padding: 13px 8px;
+    }
+
+    .track-play {
+      flex-basis: 30px;
+      width: 30px;
+      height: 30px;
+    }
+
+    .track-indicator {
+      flex-basis: 23px;
+      width: 23px;
+    }
+
     .player-section { padding: 12px; }
-    .queue-note { width: 100%; margin-left: 0; }
+
+    .queue-note {
+      width: 100%;
+      margin-left: 0;
+    }
   }
 </style>
 </head>
+
 <body>
 <main class="library">
-  <h1 id="page-title">Explore My Music</h1>
-  <p class="intro" id="intro-text">Explore my music for film, television, and commercial projects. Use the filters to discover tracks by genre, style, and mood.</p>
 
+  <h1 id="page-title">Explore My Music</h1>
+
+  <p class="intro" id="intro-text">
+    Explore my music for film, television, and commercial projects.
+    Use the filters to discover tracks by genre, style, and mood.
+  </p>
+
+  <!-- PLAYER NOW APPEARS ABOVE THE FILTERS -->
+  <section class="player-section" id="player-section"
+           aria-label="SoundCloud music player">
+
+    <div class="now-playing" id="now-playing" aria-live="polite">
+      <strong>Now playing</strong>
+      <span> — Select a track below to begin listening.</span>
+    </div>
+
+    <div class="playback-controls">
+      <button class="control-button" id="previous"
+              type="button" disabled>Previous</button>
+
+      <button class="control-button" id="next"
+              type="button" disabled>Next</button>
+
+      <span class="queue-note" id="queue-note">
+        Select a track to begin
+      </span>
+    </div>
+
+    <div id="player-container">
+      <div class="player-placeholder" id="player-placeholder">
+        Select a track below to begin listening.
+      </div>
+    </div>
+
+    <div class="credit" id="player-credit">
+      Listen to selected tracks below
+    </div>
+
+    <div id="player-status" class="status"
+         role="status" aria-live="polite" hidden></div>
+  </section>
+
+  <!-- FILTERS NOW APPEAR BELOW THE PLAYER -->
   <h2 id="filter-heading">Explore by Genre, Style &amp; Mood</h2>
+
   <div id="filters" class="filters" aria-label="Music filters">
     <div class="status">Loading filters…</div>
   </div>
 
   <div class="filter-tools">
-    <span id="count" aria-live="polite">Loading your music catalog…</span>
+    <span id="count" aria-live="polite">
+      Loading your music catalog…
+    </span>
+
     <div>
-      <button class="text-button" id="clear" type="button">Clear all filters</button>
+      <button class="text-button" id="clear" type="button">
+        Clear all filters
+      </button>
       <span aria-hidden="true"> · </span>
-      <button class="text-button" id="refresh" type="button">Reload catalog</button>
+      <button class="text-button" id="refresh" type="button">
+        Reload catalog
+      </button>
     </div>
   </div>
-
-  <section class="player-section" id="player-section" aria-label="SoundCloud music player">
-    <div class="now-playing" id="now-playing" aria-live="polite">
-      <strong>Now playing</strong><span> — Select a track below to begin listening.</span>
-    </div>
-    <div class="playback-controls">
-      <button class="control-button" id="previous" type="button" disabled>Previous</button>
-      <button class="control-button" id="next" type="button" disabled>Next</button>
-      <span class="queue-note" id="queue-note">Select a track to begin</span>
-    </div>
-    <div id="player-container">
-      <div class="player-placeholder" id="player-placeholder">Select a track below to begin listening.</div>
-    </div>
-    <div class="credit" id="player-credit">Listen to selected tracks below</div>
-    <div id="player-status" class="status" role="status" aria-live="polite" hidden></div>
-  </section>
 
   <h2 id="track-list-heading">Matching tracks</h2>
-  <div id="tracks" class="track-list" tabindex="0" aria-label="Matching tracks">
+
+  <div id="tracks" class="track-list" tabindex="0"
+       aria-label="Matching tracks">
     <div class="status">Loading tracks from Google Sheets…</div>
   </div>
+
 </main>
 
 <script src="https://w.soundcloud.com/player/api.js"></script>
+
 <script>
 "use strict";
 
@@ -434,6 +693,15 @@ function handleTrackButton(track) {
   selectTrack(track, true);
 }
 
+/* Small inline SVG icons; no external icon library needed. */
+function playIconSVG() {
+  return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.8c0-.7.8-1.1 1.4-.7l11 7.2a.8.8 0 0 1 0 1.4l-11 7.2c-.6.4-1.4 0-1.4-.7z"/></svg>';
+}
+
+function speakerIconSVG() {
+  return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 4V5L7 9H3zm12.5 3a3.5 3.5 0 0 0-2-3.16v6.31a3.5 3.5 0 0 0 2-3.15zm-2-8.5v2.06a7 7 0 0 1 0 12.88v2.06a9 9 0 0 0 0-17z"/></svg>';
+}
+
 function renderTracks() {
   tracksEl.replaceChildren();
 
@@ -470,6 +738,20 @@ function renderTracks() {
     row.className = "track" + (isCurrent ? " selected" : "");
     row.dataset.trackId = track.id;
 
+    /* Play arrow on the left of the title */
+    const playButton = document.createElement("button");
+    playButton.type = "button";
+    playButton.className = "track-play";
+    playButton.innerHTML = playIconSVG();
+    playButton.setAttribute(
+      "aria-label",
+      (isCurrent && isPlaying ? settings.pause_track_label : settings.play_track_label)
+      + " " + track.title
+    );
+    playButton.setAttribute("aria-current", String(isCurrent));
+    playButton.title = isCurrent && isPlaying ? "Pause track" : "Play track";
+    playButton.addEventListener("click", () => handleTrackButton(track));
+
     const info = document.createElement("div");
     info.className = "track-info";
 
@@ -497,29 +779,19 @@ function renderTracks() {
 
     info.appendChild(tags);
 
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "listen";
+    /* Reserve space on the right; show speaker only while playing */
+    const indicator = document.createElement("span");
+    indicator.className = "track-indicator";
 
-    if (!isCurrent) {
-      button.textContent = settings.listen_button_text;
+    if (isCurrent && isPlaying) {
+      indicator.innerHTML = speakerIconSVG();
+      indicator.setAttribute("aria-label", "Currently playing");
+      indicator.title = "Currently playing";
     } else {
-      button.textContent = isPlaying
-        ? settings.pause_track_label
-        : settings.play_track_label;
+      indicator.setAttribute("aria-hidden", "true");
     }
 
-    button.setAttribute(
-      "aria-label",
-      (isCurrent
-        ? (isPlaying ? settings.pause_track_label : settings.play_track_label)
-        : settings.listen_button_text) + " " + track.title
-    );
-
-    button.setAttribute("aria-current", String(isCurrent));
-    button.addEventListener("click", () => handleTrackButton(track));
-
-    row.append(info, button);
+    row.append(playButton, info, indicator);
     tracksEl.appendChild(row);
   });
 }
@@ -596,7 +868,6 @@ function selectTrack(track, autoPlay = true) {
   updatePlaybackControls();
   scrollToCurrentTrack();
 
-  // Keep a single player area and replace only its embedded track.
   playerContainer.replaceChildren();
 
   const iframe = document.createElement("iframe");
@@ -683,7 +954,6 @@ function reconcileCurrentTrack(filtersChanged = false) {
 
   if (currentTrack && !results.some(t => t.id === currentTrack.id)) {
     if (results.length) {
-      // Load the first matching track without automatically starting playback.
       selectTrack(results[0], false);
     } else {
       clearPlayer();
@@ -746,7 +1016,6 @@ async function loadCatalog() {
 
   loadingCatalog = true;
 
-  // Remember the selected row so a refresh can update edited track details.
   const previousTrackId = currentTrack ? currentTrack.id : null;
 
   countEl.textContent = settings.loading_message;
@@ -783,7 +1052,6 @@ async function loadCatalog() {
     applySettings();
     renderFilters();
 
-    // Reload the current track without autoplay so edited URLs/titles take effect.
     const updatedCurrentTrack = previousTrackId
       ? tracks.find(t => t.id === previousTrackId)
       : null;
