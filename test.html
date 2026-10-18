@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#ffffff">
+<title>Explore My Music</title>
+<style>
+  :root {
+    --ink: #25272c;
+    --muted: #70747d;
+    --accent: #b87548;
+    --line: #e4e3df;
+    --paper: #ffffff;
+    --soft: #f5f3f0;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px; color: var(--ink);
+    background: var(--paper); font-family: Arial, sans-serif; line-height: 1.5;
+  }
+  button { font: inherit; }
+  button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  .library { max-width: 920px; margin: auto; }
+  h1 {
+    font-family: Georgia, serif; font-weight: normal;
+    font-size: clamp(30px, 5vw, 42px); margin: 0 0 8px;
+  }
+  .intro { color: var(--muted); margin: 0 0 26px; }
+  h2 {
+    font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase;
+    margin: 22px 0 12px;
+  }
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tag {
+    border: 1px solid #d7d5d0; background: white; border-radius: 24px;
+    padding: 9px 14px; font-size: 13px; cursor: pointer;
+  }
+  .tag:hover { border-color: var(--accent); }
+  .tag.active { color: white; background: var(--ink); border-color: var(--ink); }
+  .filter-tools {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px; margin: 16px 0; font-size: 13px; color: var(--muted);
+  }
+  .text-button {
+    border: 0; padding: 6px 0; color: var(--ink); background: transparent;
+    text-decoration: underline; text-underline-offset: 2px; cursor: pointer;
+  }
+  .track-list {
+    height: 420px; max-height: 60vh; overflow-y: auto; overscroll-behavior: contain;
+    border: 1px solid var(--line); border-radius: 7px; scrollbar-gutter: stable;
+  }
+  .track {
+    display: flex; align-items: center; gap: 16px;
+    border-top: 1px solid var(--line); padding: 17px 10px; scroll-margin: 8px;
+  }
+  .track:first-child { border-top: 0; }
+  .track-info { flex: 1; min-width: 0; }
+  .track-title { font-size: 16px; font-weight: 600; margin-bottom: 3px; overflow-wrap: anywhere; }
+  .description { font-size: 13px; color: var(--muted); margin-bottom: 7px; white-space: pre-line; }
+  .track-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .mini-tag { font-size: 11px; color: #555962; background: var(--soft); border-radius: 4px; padding: 3px 7px; }
+  .listen {
+    flex-shrink: 0; background: var(--ink); color: white; border: 1px solid var(--ink);
+    border-radius: 4px; padding: 10px 14px; cursor: pointer;
+  }
+  .listen:hover { background: #45474d; }
+  .track.selected { background: #faf8f5; box-shadow: inset 3px 0 var(--accent); }
+  .empty, .status { padding: 20px; color: var(--muted); font-size: 14px; }
+  .status.error { color: #a3332b; }
+  .player-section {
+    margin: 0 0 24px; padding: 16px; border: 1px solid var(--line); border-radius: 8px;
+    background: white; box-shadow: 0 4px 20px #00000008;
+  }
+  .now-playing { font-size: 13px; margin: 0 0 12px; overflow-wrap: anywhere; }
+  .now-playing span { color: var(--muted); }
+  .playback-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+  .control-button { border: 1px solid var(--line); border-radius: 5px; background: white; padding: 8px 13px; cursor: pointer; }
+  .control-button:hover:not(:disabled) { border-color: var(--accent); }
+  .control-button:disabled { opacity: .45; cursor: not-allowed; }
+  .queue-note { color: var(--muted); font-size: 11px; margin-left: auto; }
+  .player-frame { display: block; width: 100%; height: 166px; border: 0; border-radius: 4px; }
+  .player-placeholder { padding: 20px; background: var(--soft); color: var(--muted); font-size: 13px; text-align: center; }
+  .credit { margin-top: 14px; color: var(--muted); font-size: 11px; }
+  @media (max-width: 520px) {
+    body { padding: 16px; }
+    .track-list { height: 320px; max-height: 45vh; }
+    .track { gap: 10px; padding: 14px 9px; align-items: flex-start; }
+    .listen { padding: 9px 10px; }
+    .player-section { padding: 12px; }
+    .queue-note { width: 100%; margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+<main class="library">
+  <h1 id="page-title">Explore My Music</h1>
+  <p class="intro" id="intro-text">Explore my music for film, television, and commercial projects. Use the filters to discover tracks by genre, style, and mood.</p>
+
+  <h2 id="filter-heading">Explore by Genre, Style &amp; Mood</h2>
+  <div id="filters" class="filters" aria-label="Music filters">
+    <div class="status">Loading filters…</div>
+  </div>
+
+  <div class="filter-tools">
+    <span id="count" aria-live="polite">Loading your music catalog…</span>
+    <div>
+      <button class="text-button" id="clear" type="button">Clear all filters</button>
+      <span aria-hidden="true"> · </span>
+      <button class="text-button" id="refresh" type="button">Reload catalog</button>
+    </div>
+  </div>
+
+  <section class="player-section" id="player-section" aria-label="SoundCloud music player">
+    <div class="now-playing" id="now-playing" aria-live="polite">
+      <strong>Now playing</strong><span> — Select a track below to begin listening.</span>
+    </div>
+    <div class="playback-controls">
+      <button class="control-button" id="previous" type="button" disabled>Previous</button>
+      <button class="control-button" id="next" type="button" disabled>Next</button>
+      <span class="queue-note" id="queue-note">Select a track to begin</span>
+    </div>
+    <div id="player-container">
+      <div class="player-placeholder" id="player-placeholder">Select a track below to begin listening.</div>
+    </div>
+    <div class="credit" id="player-credit">Listen to selected tracks below</div>
+    <div id="player-status" class="status" role="status" aria-live="polite" hidden></div>
+  </section>
+
+  <h2 id="track-list-heading">Matching tracks</h2>
+  <div id="tracks" class="track-list" tabindex="0" aria-label="Matching tracks">
+    <div class="status">Loading tracks from Google Sheets…</div>
+  </div>
+</main>
+
+<script src="https://w.soundcloud.com/player/api.js"></script>
+<script>
+"use strict";
+
+const CSV_URLS = {
+  tracks: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRhty571YgpYOzhS6MCwqGnl_UfMSi2ASPbEEcJdThN_zG_4qrHTYvneCCBdKFbkZMN74Vo75kfVr7k/pub?gid=0&single=true&output=csv",
+  settings: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRhty571YgpYOzhS6MCwqGnl_UfMSi2ASPbEEcJdThN_zG_4qrHTYvneCCBdKFbkZMN74Vo75kfVr7k/pub?gid=503960074&single=true&output=csv",
+  tags: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRhty571YgpYOzhS6MCwqGnl_UfMSi2ASPbEEcJdThN_zG_4qrHTYvneCCBdKFbkZMN74Vo75kfVr7k/pub?gid=867813069&single=true&output=csv"
+};
+
+const DEFAULTS = {
+  page_title: "Explore My Music",
+  intro_text: "Explore my music for film, television, and commercial projects. Use the filters to discover tracks by genre, style, and mood.",
+  filter_heading: "Explore by Genre, Style & Mood",
+  player_credit: "Listen to selected tracks below",
+  clear_filters_text: "Clear all filters",
+  previous_button_text: "Previous",
+  next_button_text: "Next",
+  loading_message: "Loading your music catalog…",
+  no_results_message: "No tracks match your selected filters.",
+  no_tracks_message: "No tracks are currently available.",
+  track_list_heading: "Matching tracks",
+  listen_button_text: "Listen",
+  loading_tracks_message: "Loading tracks from Google Sheets…",
+  player_empty_message: "Select a track below to begin listening.",
+  player_loading_text: "Select a track below to begin listening.",
+  result_count_singular: "track found",
+  result_count_plural: "tracks found",
+  now_playing_text: "Now playing",
+  paused_text: "Paused",
+  play_track_label: "Play",
+  pause_track_label: "Pause",
+  filter_changed_message: "Your filters changed. Select a track to continue listening.",
+  playback_error_message: "This track could not be loaded. Check that its public SoundCloud URL is correct."
+};
+
+let tracks = [];
+let selectedTags = new Set();
+let currentTrack = null;
+let widget = null;
+let widgetReady = false;
+let isPlaying = false;
+let loadingCatalog = false;
+let playbackGeneration = 0;
+let settings = { ...DEFAULTS };
+let tagSettings = [];
+
+const filtersEl = document.getElementById("filters");
+const tracksEl = document.getElementById("tracks");
+const countEl = document.getElementById("count");
+const playerContainer = document.getElementById("player-container");
+const nowPlaying = document.getElementById("now-playing");
+const previousButton = document.getElementById("previous");
+const nextButton = document.getElementById("next");
+const queueNote = document.getElementById("queue-note");
+const playerStatus = document.getElementById("player-status");
+
+function parseCSV(text) {
+  const rows = [];
+  let row = [], field = "", quoted = false;
+  text = text.replace(/^\uFEFF/, "");
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+
+    if (quoted) {
+      if (ch === '"' && text[i + 1] === '"') {
+        field += '"';
+        i++;
+      } else if (ch === '"') {
+        quoted = false;
+      } else {
+        field += ch;
+      }
+    } else if (ch === '"' && field === "") {
+      quoted = true;
+    } else if (ch === ",") {
+      row.push(field);
+      field = "";
+    } else if (ch === "\n") {
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = "";
+    } else if (ch !== "\r") {
+      field += ch;
+    }
+  }
+
+  if (field !== "" || row.length) {
+    row.push(field);
+    rows.push(row);
+  }
+
+  if (!rows.length) return [];
+
+  const headers = rows.shift().map(normalizeHeader);
+
+  return rows
+    .filter(r => r.some(v => String(v || "").trim() !== ""))
+    .map(r => {
+      const obj = {};
+      headers.forEach((h, i) => {
+        obj[h] = String(r[i] ?? "").trim();
+      });
+      return obj;
+    });
+}
+
+function normalizeHeader(value) {
+  return String(value || "")
+    .replace(/^\uFEFF/, "")
+    .trim()
+    .toLowerCase()
+    .replace(/[?]/g, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ");
+}
+
+function field(row, ...names) {
+  for (const name of names) {
+    const key = normalizeHeader(name);
+    if (Object.prototype.hasOwnProperty.call(row, key)) return row[key];
+  }
+  return "";
+}
+
+function yes(value) {
+  return /^(yes|true|1|y|show)$/i.test(String(value || "").trim());
+}
+
+function normTag(value) {
+  return String(value || "").trim().toLocaleLowerCase();
+}
+
+async function fetchCSV(url) {
+  const response = await fetch(url, { cache: "no-store" });
+
+  if (!response.ok) {
+    throw new Error("Google Sheets returned HTTP " + response.status);
+  }
+
+  const text = await response.text();
+
+  if (!text.trim() || /^\s*<!doctype html|^\s*<html/i.test(text)) {
+    throw new Error("A published sheet returned empty content or HTML instead of CSV. Check its Publish to web settings and URL.");
+  }
+
+  return parseCSV(text);
+}
+
+function parseTracks(rows) {
+  if (!rows.length) {
+    throw new Error("The Tracks sheet appears to be empty.");
+  }
+
+  const headers = Object.keys(rows[0]);
+  const required = ["track title", "soundcloud url", "tags", "playback order"];
+  const missing = required.filter(h => !headers.includes(h));
+
+  if (missing.length) {
+    throw new Error("Missing Tracks column(s): " + missing.join(", "));
+  }
+
+  return rows.map((row, originalIndex) => {
+    const title = field(row, "track title");
+    const url = field(row, "soundcloud url");
+
+    if (!title || !url) return null;
+
+    const showValue = field(row, "show");
+    if (showValue && !yes(showValue)) return null;
+
+    const orderText = field(row, "playback order");
+    const order = Number(orderText);
+
+    return {
+      id: "track-" + originalIndex,
+      title,
+      url,
+      tags: field(row, "tags").split(",").map(t => t.trim()).filter(Boolean),
+      description: field(row, "description"),
+      order: orderText !== "" && Number.isFinite(order) ? order : 999999,
+      originalIndex
+    };
+  }).filter(Boolean)
+    .sort((a, b) => a.order - b.order || a.originalIndex - b.originalIndex);
+}
+
+function parseTagSettings(rows) {
+  return rows.map((row, index) => {
+    const tag = field(row, "tag", "tag name");
+    if (!tag) return null;
+
+    const showValue = field(row, "show as filter", "show", "enabled");
+    const orderText = field(row, "display order", "order");
+    const order = Number(orderText);
+
+    return {
+      tag,
+      key: normTag(tag),
+      show: showValue === "" ? true : yes(showValue),
+      order: orderText !== "" && Number.isFinite(order) ? order : index + 1,
+      index
+    };
+  }).filter(Boolean)
+    .sort((a, b) => a.order - b.order || a.index - b.index);
+}
+
+function parseSettings(rows) {
+  const result = { ...DEFAULTS };
+
+  rows.forEach(row => {
+    const key = field(row, "setting", "key", "setting name")
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/g, "_");
+
+    const value = field(row, "value", "text");
+
+    if (key && value !== "" && Object.prototype.hasOwnProperty.call(result, key)) {
+      result[key] = value;
+    }
+  });
+
+  return result;
+}
+
+function applySettings() {
+  document.title = settings.page_title;
+  document.getElementById("page-title").textContent = settings.page_title;
+  document.getElementById("intro-text").textContent = settings.intro_text;
+  document.getElementById("filter-heading").textContent = settings.filter_heading;
+  document.getElementById("clear").textContent = settings.clear_filters_text;
+  document.getElementById("refresh").textContent = "Reload catalog";
+  previousButton.textContent = settings.previous_button_text;
+  nextButton.textContent = settings.next_button_text;
+  document.getElementById("track-list-heading").textContent = settings.track_list_heading;
+  document.getElementById("player-credit").textContent = settings.player_credit;
+
+  const placeholder = document.getElementById("player-placeholder");
+  if (placeholder) placeholder.textContent = settings.player_empty_message;
+
+  updateNowPlaying(currentTrack);
+}
+
+function getFilteredTracks() {
+  return tracks.filter(track => {
+    const trackTags = new Set(track.tags.map(normTag));
+    return [...selectedTags].every(tag => trackTags.has(tag));
+  });
+}
+
+function renderFilters() {
+  filtersEl.replaceChildren();
+
+  const visible = tagSettings.filter(t => t.show);
+
+  if (!visible.length) {
+    const message = document.createElement("div");
+    message.className = "status";
+    message.textContent = "No filter tags are enabled in the Tags sheet.";
+    filtersEl.appendChild(message);
+    return;
+  }
+
+  visible.forEach(item => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "tag" + (selectedTags.has(item.key) ? " active" : "");
+    button.textContent = item.tag;
+    button.setAttribute("aria-pressed", String(selectedTags.has(item.key)));
+
+    button.addEventListener("click", () => {
+      if (selectedTags.has(item.key)) selectedTags.delete(item.key);
+      else selectedTags.add(item.key);
+
+      renderFilters();
+      renderTracks();
+      reconcileCurrentTrack(true);
+    });
+
+    filtersEl.appendChild(button);
+  });
+}
+
+function handleTrackButton(track) {
+  if (currentTrack && currentTrack.id === track.id && widgetReady && widget) {
+    try {
+      if (isPlaying) widget.pause();
+      else widget.play();
+    } catch (error) {
+      console.error("SoundCloud playback control error:", error);
+      selectTrack(track, true);
+    }
+    return;
+  }
+
+  selectTrack(track, true);
+}
+
+function renderTracks() {
+  tracksEl.replaceChildren();
+
+  const results = getFilteredTracks();
+
+  const countText = results.length === 1
+    ? settings.result_count_singular
+    : settings.result_count_plural;
+
+  countEl.textContent = `${results.length} ${countText}`;
+
+  updatePlaybackControls(results);
+
+  if (!tracks.length) {
+    const message = document.createElement("div");
+    message.className = "empty";
+    message.textContent = settings.no_tracks_message;
+    tracksEl.appendChild(message);
+    return;
+  }
+
+  if (!results.length) {
+    const message = document.createElement("div");
+    message.className = "empty";
+    message.textContent = settings.no_results_message;
+    tracksEl.appendChild(message);
+    return;
+  }
+
+  results.forEach(track => {
+    const isCurrent = Boolean(currentTrack && currentTrack.id === track.id);
+
+    const row = document.createElement("article");
+    row.className = "track" + (isCurrent ? " selected" : "");
+    row.dataset.trackId = track.id;
+
+    const info = document.createElement("div");
+    info.className = "track-info";
+
+    const title = document.createElement("div");
+    title.className = "track-title";
+    title.textContent = track.title;
+    info.appendChild(title);
+
+    if (track.description) {
+      const description = document.createElement("div");
+      description.className = "description";
+      description.textContent = track.description;
+      info.appendChild(description);
+    }
+
+    const tags = document.createElement("div");
+    tags.className = "track-tags";
+
+    track.tags.forEach(tag => {
+      const chip = document.createElement("span");
+      chip.className = "mini-tag";
+      chip.textContent = tag;
+      tags.appendChild(chip);
+    });
+
+    info.appendChild(tags);
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "listen";
+
+    if (!isCurrent) {
+      button.textContent = settings.listen_button_text;
+    } else {
+      button.textContent = isPlaying
+        ? settings.pause_track_label
+        : settings.play_track_label;
+    }
+
+    button.setAttribute(
+      "aria-label",
+      (isCurrent
+        ? (isPlaying ? settings.pause_track_label : settings.play_track_label)
+        : settings.listen_button_text) + " " + track.title
+    );
+
+    button.setAttribute("aria-current", String(isCurrent));
+    button.addEventListener("click", () => handleTrackButton(track));
+
+    row.append(info, button);
+    tracksEl.appendChild(row);
+  });
+}
+
+function updateNowPlaying(track) {
+  nowPlaying.replaceChildren();
+
+  const label = document.createElement("strong");
+  label.textContent = isPlaying
+    ? settings.now_playing_text
+    : settings.paused_text;
+
+  const title = document.createElement("span");
+  title.textContent = track
+    ? " — " + track.title
+    : " — " + settings.player_loading_text;
+
+  nowPlaying.append(label, title);
+}
+
+function updatePlaybackControls(results = getFilteredTracks()) {
+  const index = currentTrack
+    ? results.findIndex(t => t.id === currentTrack.id)
+    : -1;
+
+  previousButton.disabled = index <= 0;
+  nextButton.disabled = index < 0 || index >= results.length - 1;
+
+  if (!currentTrack) {
+    queueNote.textContent = results.length
+      ? `${results.length} tracks in current selection`
+      : "No matching tracks";
+  } else if (index === -1) {
+    queueNote.textContent = "Current track is outside these filters";
+  } else {
+    queueNote.textContent = `Track ${index + 1} of ${results.length}`;
+  }
+}
+
+function setPlayerStatus(message, isError = false) {
+  playerStatus.hidden = !message;
+  playerStatus.textContent = message;
+  playerStatus.classList.toggle("error", isError);
+}
+
+function validSoundCloudURL(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" &&
+      ["soundcloud.com", "www.soundcloud.com", "m.soundcloud.com"].includes(url.hostname);
+  } catch (_) {
+    return false;
+  }
+}
+
+function selectTrack(track, autoPlay = true) {
+  if (!track) return;
+
+  if (!validSoundCloudURL(track.url)) {
+    setPlayerStatus(settings.playback_error_message, true);
+    return;
+  }
+
+  currentTrack = track;
+  isPlaying = autoPlay;
+
+  const generation = ++playbackGeneration;
+  widget = null;
+  widgetReady = false;
+
+  updateNowPlaying(track);
+  setPlayerStatus("");
+  renderTracks();
+  updatePlaybackControls();
+  scrollToCurrentTrack();
+
+  // Keep a single player area and replace only its embedded track.
+  playerContainer.replaceChildren();
+
+  const iframe = document.createElement("iframe");
+  iframe.className = "player-frame";
+  iframe.title = "SoundCloud player: " + track.title;
+  iframe.allow = "autoplay";
+  iframe.loading = "eager";
+
+  const params = new URLSearchParams({
+    url: track.url,
+    auto_play: autoPlay ? "true" : "false",
+    hide_related: "true",
+    show_comments: "false",
+    show_user: "true",
+    show_reposts: "false",
+    visual: "false",
+    color: "b87548"
+  });
+
+  iframe.src = "https://w.soundcloud.com/player/?" + params.toString();
+  playerContainer.appendChild(iframe);
+
+  iframe.addEventListener("load", () => {
+    if (generation !== playbackGeneration) return;
+
+    if (!window.SC || !window.SC.Widget) {
+      setPlayerStatus(
+        "The SoundCloud player API did not load. Refresh the page and try again.",
+        true
+      );
+      return;
+    }
+
+    const thisWidget = window.SC.Widget(iframe);
+    widget = thisWidget;
+
+    thisWidget.bind(window.SC.Widget.Events.READY, () => {
+      if (generation !== playbackGeneration || widget !== thisWidget) return;
+
+      widgetReady = true;
+
+      thisWidget.bind(window.SC.Widget.Events.PLAY, () => {
+        if (generation !== playbackGeneration || widget !== thisWidget) return;
+        isPlaying = true;
+        updateNowPlaying(currentTrack);
+        renderTracks();
+      });
+
+      thisWidget.bind(window.SC.Widget.Events.PAUSE, () => {
+        if (generation !== playbackGeneration || widget !== thisWidget) return;
+        isPlaying = false;
+        updateNowPlaying(currentTrack);
+        renderTracks();
+      });
+
+      thisWidget.bind(window.SC.Widget.Events.FINISH, () => {
+        if (generation !== playbackGeneration || widget !== thisWidget) return;
+        isPlaying = false;
+        advanceTrack(1, true);
+      });
+    });
+  }, { once: true });
+}
+
+function scrollToCurrentTrack() {
+  if (!currentTrack) return;
+
+  const row = tracksEl.querySelector(
+    `[data-track-id="${CSS.escape(currentTrack.id)}"]`
+  );
+
+  if (row) {
+    row.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+      block: "nearest"
+    });
+  }
+}
+
+function reconcileCurrentTrack(filtersChanged = false) {
+  const results = getFilteredTracks();
+
+  if (currentTrack && !results.some(t => t.id === currentTrack.id)) {
+    if (results.length) {
+      // Load the first matching track without automatically starting playback.
+      selectTrack(results[0], false);
+    } else {
+      clearPlayer();
+    }
+
+    if (filtersChanged) {
+      setPlayerStatus(settings.filter_changed_message);
+    }
+  } else {
+    renderTracks();
+    updatePlaybackControls(results);
+  }
+}
+
+function clearPlayer() {
+  ++playbackGeneration;
+  currentTrack = null;
+  widget = null;
+  widgetReady = false;
+  isPlaying = false;
+
+  playerContainer.replaceChildren();
+
+  const placeholder = document.createElement("div");
+  placeholder.className = "player-placeholder";
+  placeholder.id = "player-placeholder";
+  placeholder.textContent = settings.player_empty_message;
+  playerContainer.appendChild(placeholder);
+
+  updateNowPlaying(null);
+  setPlayerStatus("");
+  renderTracks();
+  updatePlaybackControls();
+}
+
+function advanceTrack(direction, autoPlay = true) {
+  const results = getFilteredTracks();
+  if (!results.length) return;
+
+  const currentIndex = currentTrack
+    ? results.findIndex(t => t.id === currentTrack.id)
+    : -1;
+
+  const targetIndex = currentIndex === -1
+    ? (direction > 0 ? 0 : results.length - 1)
+    : currentIndex + direction;
+
+  if (targetIndex < 0 || targetIndex >= results.length) {
+    if (direction > 0) {
+      setPlayerStatus("You've reached the end of the filtered list.");
+    }
+    return;
+  }
+
+  selectTrack(results[targetIndex], autoPlay);
+}
+
+async function loadCatalog() {
+  if (loadingCatalog) return;
+
+  loadingCatalog = true;
+
+  // Remember the selected row so a refresh can update edited track details.
+  const previousTrackId = currentTrack ? currentTrack.id : null;
+
+  countEl.textContent = settings.loading_message;
+  tracksEl.replaceChildren();
+
+  const loading = document.createElement("div");
+  loading.className = "status";
+  loading.textContent = settings.loading_tracks_message;
+  tracksEl.appendChild(loading);
+
+  try {
+    const [trackRows, settingsRows, tagRows] = await Promise.all([
+      fetchCSV(CSV_URLS.tracks),
+      fetchCSV(CSV_URLS.settings),
+      fetchCSV(CSV_URLS.tags)
+    ]);
+
+    const newTracks = parseTracks(trackRows);
+    const newSettings = parseSettings(settingsRows);
+    const newTagSettings = parseTagSettings(tagRows);
+
+    tracks = newTracks;
+    settings = newSettings;
+    tagSettings = newTagSettings;
+
+    const visibleKeys = new Set(
+      tagSettings.filter(t => t.show).map(t => t.key)
+    );
+
+    selectedTags = new Set(
+      [...selectedTags].filter(t => visibleKeys.has(t))
+    );
+
+    applySettings();
+    renderFilters();
+
+    // Reload the current track without autoplay so edited URLs/titles take effect.
+    const updatedCurrentTrack = previousTrackId
+      ? tracks.find(t => t.id === previousTrackId)
+      : null;
+
+    if (updatedCurrentTrack) {
+      selectTrack(updatedCurrentTrack, false);
+    } else {
+      if (previousTrackId) clearPlayer();
+      else {
+        renderTracks();
+        reconcileCurrentTrack();
+      }
+    }
+  } catch (error) {
+    console.error("Catalog loading error:", error);
+    countEl.textContent = "Catalog could not be loaded";
+    tracksEl.replaceChildren();
+
+    const message = document.createElement("div");
+    message.className = "status error";
+
+    message.textContent = location.protocol === "file:"
+      ? "This preview was opened directly from your computer, so the browser may block Google Sheets requests. Test this page from GitHub Pages instead. Details: " + error.message
+      : "Couldn't load the catalog. Confirm all three sheets are published as CSV and their column headings are correct. Details: " + error.message;
+
+    tracksEl.appendChild(message);
+  } finally {
+    loadingCatalog = false;
+  }
+}
+
+document.getElementById("clear").addEventListener("click", () => {
+  selectedTags.clear();
+  renderFilters();
+  renderTracks();
+  reconcileCurrentTrack(true);
+});
+
+previousButton.addEventListener("click", () => advanceTrack(-1, true));
+nextButton.addEventListener("click", () => advanceTrack(1, true));
+document.getElementById("refresh").addEventListener("click", loadCatalog);
+
+loadCatalog();
+</script>
+</body>
+</html>
